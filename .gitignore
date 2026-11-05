@@ -59,6 +59,8 @@ out/
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
+.idea/*
+.idea
 
 # JIRA plugin
 atlassian-ide-plugin.xml
@@ -153,9 +155,6 @@ buildNumber.properties
 .mvn/timing.properties
 # https://github.com/takari/maven-wrapper#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
-mvnw
-mvnw.cmd
-.mvn/
 
 # Eclipse m2e generated files
 # Eclipse Core
@@ -163,5 +162,6 @@ mvnw.cmd
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
-.gitattributes
+.DS_Store
 # End of https://www.toptal.com/developers/gitignore/api/java,intellij,maven
+/.idea/
