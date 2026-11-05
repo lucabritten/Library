@@ -60,6 +60,7 @@ out/
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 .idea/*
+.idea
 
 # JIRA plugin
 atlassian-ide-plugin.xml
@@ -161,5 +162,5 @@ buildNumber.properties
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
-.gitattributes
+.DS_Store
 # End of https://www.toptal.com/developers/gitignore/api/java,intellij,maven
