@@ -1,5 +1,7 @@
 package de.htwsaar.library.book;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,5 +14,7 @@ interface BookRepo extends JpaRepository<Book, Long> {
 
     Optional<Book> findByTitle(String title);
 
-    List<Book> findByAuthor(String author);
+    Page<Book> findAllByAuthor(String author, Pageable pageable);
+
+    Boolean existsByIsbn(String isbn);
 }
