@@ -1,8 +1,10 @@
 package de.htwsaar.library.book;
 
+import de.htwsaar.library.author.Author;
+import de.htwsaar.library.author.AuthorService;
 import de.htwsaar.library.book.BookDtos.BookResponse;
 import de.htwsaar.library.book.BookDtos.CreateBookRequest;
-import de.htwsaar.library.book.BookDtos.PageResponse;
+import de.htwsaar.library.common.Dtos.PageResponse;
 
 
 import de.htwsaar.library.book.BookExceptions.BookNotFoundException;
@@ -16,9 +18,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true) //Standard für die Klasse, abweichende (schreibende) Methoden brauchen nochmal Annotation
@@ -27,23 +26,26 @@ public class BookService {
     private final Logger logger =
             LoggerFactory.getLogger(BookService.class);
 
+    private final AuthorService authorService;
+
     private final BookRepo bookRepo;
     private final BookProperties bookProperties;
 
-    public BookService(BookRepo bookRepo, BookProperties bookProperties) {
+    public BookService(AuthorService authorService, BookRepo bookRepo, BookProperties bookProperties) {
+        this.authorService = authorService;
         this.bookRepo = bookRepo;
         this.bookProperties = bookProperties;
     }
 
-    public PageResponse<BookResponse> search(String author, Pageable pageable) {
-        Page<Book> books;
-        if (StringUtils.hasText(author))
-            books = bookRepo.findAllByAuthor(author, pageable);
+    public PageResponse<BookResponse> search(Long authorId, Pageable pageable) {
+        Page<Book> bookPage;
+        if (authorId != null)
+            bookPage = bookRepo.findAllByAuthorId(authorId, pageable);
 
         else
-            books = bookRepo.findAll(pageable);
+            bookPage = bookRepo.findAll(pageable);
 
-        return PageResponse.from(books.map(BookResponse::from));
+        return PageResponse.from(bookPage.map(BookResponse::from));
     }
 
     public BookResponse findById(Long id) {
@@ -60,10 +62,11 @@ public class BookService {
         String isbn = normalize(req.isbn());
 
         if (bookRepo.existsByIsbn(isbn))
-            throw new DuplicateIsbnException(req.isbn());
+            throw new DuplicateIsbnException(isbn);
 
+        Author author = authorService.require(req.authorId());
         try {
-            Book saved = bookRepo.saveAndFlush(new Book(req.title(), isbn, req.author()));
+            Book saved = bookRepo.saveAndFlush(new Book(req.title(), isbn, author));
             logger.info("Created book id={}, isbn={}", saved.getId(), saved.getIsbn());
             return BookResponse.from(saved);
         } catch (DataIntegrityViolationException e) {

@@ -1,7 +1,7 @@
 package de.htwsaar.library.book;
 
 import de.htwsaar.library.book.BookDtos.BookResponse;
-import de.htwsaar.library.book.BookDtos.PageResponse;
+import de.htwsaar.library.common.Dtos.PageResponse;
 
 import de.htwsaar.library.book.BookDtos.CreateBookRequest;
 
@@ -33,6 +33,8 @@ public class BookController {
     }
 
 
+    @Operation(summary = "Get a book by id")
+    @ApiResponse(responseCode = "404", description = "Book with id does not exist")
     @GetMapping("/{id}")
     public ResponseEntity<BookResponse> getById(@PathVariable Long id) {
         BookResponse response = bookService.findById(id);
@@ -45,10 +47,10 @@ public class BookController {
     @ApiResponse(responseCode = "400", description = "Invalid input")
     @GetMapping
     public ResponseEntity<PageResponse<BookResponse>> search(
-            @RequestParam(required = false) String author,
+            @RequestParam(required = false) Long authorId,
             @PageableDefault(size = 20, sort= "title") Pageable pageable
             ) {
-            PageResponse<BookResponse> books = bookService.search(author, pageable);
+            PageResponse<BookResponse> books = bookService.search(authorId, pageable);
 
             return ResponseEntity.ok(books);
     }

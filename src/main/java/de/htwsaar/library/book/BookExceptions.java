@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 public class BookExceptions {
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     public static class BookNotFoundException extends Exceptions.NotFoundException {
         public BookNotFoundException(String message) {
             super(message);
