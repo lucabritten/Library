@@ -1,5 +1,6 @@
 package de.htwsaar.library.common;
 
+import de.htwsaar.library.author.AuthorExceptions;
 import de.htwsaar.library.book.BookExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,31 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger logger =
             LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+
+    @ExceptionHandler({BookExceptions.DuplicateIsbnException.class, OptimisticLockingFailureException.class})
+    ProblemDetail duplicateIsbn(RuntimeException ex) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        pd.setTitle("Konflikt mit dem aktuellen Zustand");
+
+        pd.setDetail(ex instanceof BookExceptions.DuplicateIsbnException ? ex.getMessage()
+                : "Der Datensatz wurde gerade von jemand anderem geändert. Bitte neu laden.");
+        return pd;
+    }
+
+
+    @ExceptionHandler(AuthorExceptions.AuthorInUseException.class)
+    ProblemDetail authorInUse(AuthorExceptions.AuthorInUseException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+
+        pd.setType(URI.create("https://library.example/problems/author-in-use"));
+        pd.setTitle("Author still in use");
+
+        return pd;
+    }
+
     @ExceptionHandler(Exceptions.NotFoundException.class)
     ProblemDetail notFound(Exceptions.NotFoundException ex) {
         logger.info("NOT-FOUND-EXCEPTION: {}", ex.getMessage());
@@ -34,15 +60,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return pd;
     }
 
-    @ExceptionHandler({BookExceptions.DuplicateIsbnException.class, OptimisticLockingFailureException.class})
-    ProblemDetail duplicateIsbn(RuntimeException ex) {
-        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.CONFLICT);
-        pd.setTitle("Konflikt mit dem aktuellen Zustand");
-
-        pd.setDetail(ex instanceof BookExceptions.DuplicateIsbnException ? ex.getMessage()
-                : "Der Datensatz wurde gerade von jemand anderem geändert. Bitte neu laden.");
-        return pd;
-    }
 
     @ExceptionHandler(PropertyReferenceException.class)
     ProblemDetail handleBadSort(PropertyReferenceException ex) {
