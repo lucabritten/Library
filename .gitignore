@@ -61,7 +61,7 @@ out/
 .idea_modules/
 .idea/*
 .idea
-
+*.iml
 # JIRA plugin
 atlassian-ide-plugin.xml
 
