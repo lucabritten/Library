@@ -14,9 +14,9 @@ public class AuthorExceptions {
         }
     }
 
-    public static class AuthorInUseException extends RuntimeException {
+    public static class AuthorInUseException extends Exceptions.ConflictException {
         public AuthorInUseException(Long authorId) {
-            super("Author with id=" + authorId + " has still connected records.");
+            super("author-in-use","Author with id=" + authorId + " has still connected records.");
         }
     }
 }

@@ -17,7 +17,7 @@ import org.springframework.util.StringUtils;
 @Transactional(readOnly = true)
 public class AuthorService {
 
-    private final Logger logger =
+    private final static Logger logger =
             LoggerFactory.getLogger(AuthorService.class);
 
     private final AuthorRepo authorRepo;
@@ -64,14 +64,6 @@ public class AuthorService {
             throw new AuthorInUseException(author.getId());
         }
     }
-
-
-
-
-
-
-
-
 
     //Schnittstellen-Methode zu BookService
     public Author require(Long id) {

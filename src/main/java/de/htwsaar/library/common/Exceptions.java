@@ -5,11 +5,22 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 public class Exceptions {
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     public static class NotFoundException extends RuntimeException {
 
         public NotFoundException(String message) {
             super(message);
+        }
+    }
+
+    public static class ConflictException extends RuntimeException {
+        private final String type;
+        public ConflictException(String type, String message) {
+            super(message);
+            this.type = type;
+        }
+
+        public String getType() {
+            return type;
         }
     }
 }
