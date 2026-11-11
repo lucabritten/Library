@@ -8,7 +8,8 @@ import jakarta.persistence.*;
 public class Book {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "book_seq_gen")
+    @SequenceGenerator(name = "book_seq_gen", sequenceName = "book_seq", allocationSize = 50)
     private Long id;
 
     @Column(nullable = false)
@@ -47,6 +48,7 @@ public class Book {
 
     @Override
     public String toString() {
-        return String.format("[BOOK]: %s by %s", title, author);
+        return "Book{id=" + id + ", isbn=" + isbn
+                + ", authorId=" + (author != null ? author.getId() : null) + "}";
     }
 }
