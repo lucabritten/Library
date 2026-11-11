@@ -7,7 +7,8 @@ import jakarta.persistence.*;
 public class Author {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "author_seq_gen")
+    @SequenceGenerator(name = "author_seq_gen", sequenceName = "author_seq", allocationSize = 50)
     private Long id;
 
     @Column(nullable = false)

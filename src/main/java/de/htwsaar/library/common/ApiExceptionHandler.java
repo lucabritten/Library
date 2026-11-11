@@ -1,7 +1,5 @@
 package de.htwsaar.library.common;
 
-import de.htwsaar.library.author.AuthorExceptions;
-import de.htwsaar.library.book.BookExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -25,26 +23,28 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             LoggerFactory.getLogger(ApiExceptionHandler.class);
 
 
-    @ExceptionHandler({BookExceptions.DuplicateIsbnException.class, OptimisticLockingFailureException.class})
-    ProblemDetail duplicateIsbn(RuntimeException ex) {
-        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.CONFLICT);
-        pd.setTitle("Konflikt mit dem aktuellen Zustand");
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ProblemDetail optimisticLock(OptimisticLockingFailureException ex) {
+        logger.info("Optimistic lock conflict: {}", ex.getMessage()); // Details nur im LOG
 
-        pd.setDetail(ex instanceof BookExceptions.DuplicateIsbnException ? ex.getMessage()
-                : "Der Datensatz wurde gerade von jemand anderem geändert. Bitte neu laden.");
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "The resource was modified concurrently. Please reload and try again.");
+        pd.setType(URI.create("https://library.example/problems/concurrent-modification"));
+        pd.setTitle("Concurrent modification");
         return pd;
     }
 
 
-    @ExceptionHandler(AuthorExceptions.AuthorInUseException.class)
-    ProblemDetail authorInUse(AuthorExceptions.AuthorInUseException ex) {
+    @ExceptionHandler(Exceptions.ConflictException.class)
+    ProblemDetail authorInUse(Exceptions.ConflictException ex) {
+        logger.info("CONFLICT-EXCEPTION: {}", ex.getMessage());
+
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
                 ex.getMessage()
         );
-
-        pd.setType(URI.create("https://library.example/problems/author-in-use"));
-        pd.setTitle("Author still in use");
+        pd.setType(URI.create("https://library.example/problems/" + ex.getType()));
+        pd.setTitle("Conflict with requested resource");
 
         return pd;
     }
@@ -53,7 +53,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail notFound(Exceptions.NotFoundException ex) {
         logger.info("NOT-FOUND-EXCEPTION: {}", ex.getMessage());
 
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
         pd.setType(URI.create("https://library.example/problems/not-found"));
         pd.setTitle("Requested resource not found");
 

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 @Transactional(readOnly = true) //Standard für die Klasse, abweichende (schreibende) Methoden brauchen nochmal Annotation
 public class BookService {
 
-    private final Logger logger =
+    private final static Logger logger =
             LoggerFactory.getLogger(BookService.class);
 
     private final AuthorService authorService;
@@ -81,5 +81,14 @@ public class BookService {
     @Transactional
     public void delete(Long id) {
         bookRepo.deleteById(id);
+    }
+
+    //SChnittstelle zu BookCopy
+    public Book require(Long id) {
+        return bookRepo.findById(id)
+                .orElseThrow(() -> {
+                    logger.info("Book with id={} not found.", id);
+                    return new BookNotFoundException(id);
+                });
     }
 }

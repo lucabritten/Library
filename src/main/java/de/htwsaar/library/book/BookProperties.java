@@ -7,5 +7,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "library.books")
 public record BookProperties (
-    @DefaultValue("true") boolean normalizeIsbn
+    @DefaultValue("true")
+    boolean normalizeIsbn
 ) {}
