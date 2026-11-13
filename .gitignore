@@ -167,3 +167,5 @@ buildNumber.properties
 /.idea/
 
 src/main/resources/application-local.properties
+NOTES.md
+NOTES-backup.md
