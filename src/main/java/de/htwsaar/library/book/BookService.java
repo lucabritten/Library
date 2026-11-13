@@ -49,12 +49,7 @@ public class BookService {
     }
 
     public BookResponse findById(Long id) {
-        return bookRepo.findById(id)
-                .map(BookDtos.BookResponse::from)
-                .orElseThrow(() -> {
-                    logger.info("Book with id={} not found", id);
-                    return new BookNotFoundException(id);
-                });
+        return BookResponse.from(require(id));
     }
 
     @Transactional

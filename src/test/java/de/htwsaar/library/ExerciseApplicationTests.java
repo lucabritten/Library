@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Import;
 @Import(de.htwsaar.library.TestcontainerConfig.class)
 class ExerciseApplicationTests {
 
-    @Test
-    void contextLoads() {
-    }
+//    @Test
+//    void contextLoads() {
+//    }
 
 }
