@@ -50,8 +50,8 @@ public class BookCopyController {
     }
 
     @Operation(summary = "Withdraw copy from catalog by inventory-number")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponse(responseCode = "409", description = "Copy is not available.")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PutMapping("/{inventoryNumber}")
     public void withdrawCopy(@PathVariable String inventoryNumber) {
         bookCopyService.withdrawCopy(inventoryNumber);

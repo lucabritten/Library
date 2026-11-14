@@ -23,7 +23,8 @@ public class LoanController {
 
     @Operation(summary = "Lend a book-copy")
     @ApiResponse(responseCode = "201", description = "resource created successfully")
-    @ApiResponse(responseCode = "404", description = "Did not found requested resource")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "404", description = "Did not found  a requested resource like member or copy")
     @ApiResponse(responseCode = "409", description = "Copy already loaned or not available")
     @PostMapping
     public ResponseEntity<LoanDtos.LoanResponse> lendCopy(@Valid @RequestBody LoanDtos.CreateLoanRequest req) {

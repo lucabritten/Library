@@ -3,6 +3,7 @@ package de.htwsaar.library.loan;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 
@@ -10,6 +11,7 @@ public class LoanDtos {
 
     public record CreateLoanRequest(
             @NotNull
+            @Positive
             Long memberId,
 
             @NotBlank

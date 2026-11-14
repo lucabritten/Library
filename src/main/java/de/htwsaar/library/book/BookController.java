@@ -77,6 +77,8 @@ public class BookController {
 
 
     @Operation(summary = "Delete book from catalog by id")
+    @ApiResponse(responseCode = "204", description = "Book deleted successfully")
+    @ApiResponse(responseCode = "409", description = "Book is linked to copies, delete those copies first.")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
