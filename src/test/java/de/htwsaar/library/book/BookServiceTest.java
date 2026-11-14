@@ -15,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -149,5 +151,28 @@ public class BookServiceTest {
 
         assertThatThrownBy(() -> bookService.findById(id))
                 .isInstanceOf(BookExceptions.BookNotFoundException.class);
+    }
+
+    @Test
+    void delete_unknownId_throwsNotFound() {
+        long id = 123L;
+        BookService service = serviceWith(false);
+        when(bookRepo.findById(id))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.delete(123L))
+                .isInstanceOf(BookExceptions.BookNotFoundException.class);
+    }
+
+    @Test
+    void delete_bookWithCopiesDelete_throwsInUse() {
+        BookService service = serviceWith(false);
+        when(bookRepo.findById(123L))
+                .thenReturn(Optional.of(new Book("Star Wars", "123", new Author("Albert", "Einstein"))));
+        doThrow(DataIntegrityViolationException.class)
+                .when(bookRepo).flush();
+
+        assertThatThrownBy(() -> service.delete(123L))
+                .isInstanceOf(BookExceptions.BookInUseException.class);
     }
 }

@@ -75,7 +75,13 @@ public class BookService {
 
     @Transactional
     public void delete(Long id) {
-        bookRepo.deleteById(id);
+        Book book = require(id);
+        try {
+            bookRepo.delete(book);
+            bookRepo.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new BookExceptions.BookInUseException(id);
+        }
     }
 
     //SChnittstelle zu BookCopy
