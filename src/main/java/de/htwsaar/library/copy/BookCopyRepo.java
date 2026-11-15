@@ -15,5 +15,4 @@ interface BookCopyRepo extends JpaRepository<BookCopy, Long> {
 
     @EntityGraph(attributePaths = "book")
     Optional<BookCopy> findByInventoryNumber(String inventoryNumber);
-    void deleteBookCopyByInventoryNumber(String inventoryNumber);
 }

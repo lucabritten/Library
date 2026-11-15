@@ -52,15 +52,16 @@ public class BookCopy {
     }
 
     public void markLoaned() {
-        if (copyStatus != CopyStatus.AVAILABLE) throw new CopyNotAvailableException(id, inventoryNumber);
+        if (copyStatus != CopyStatus.AVAILABLE ) throw new CopyNotAvailableException(id, inventoryNumber);
+
         copyStatus = CopyStatus.LOANED;
     }
 
     public void markReturned() {
-        if (copyStatus == CopyStatus.LOANED)
-            copyStatus = CopyStatus.AVAILABLE;
-        else
+        if (copyStatus != CopyStatus.LOANED)
             throw new CopyNotAvailableException("Copy not marked as loaned. Please double check.");
+
+        copyStatus = CopyStatus.AVAILABLE;
     }
 
     public void markWithdrawn() {
@@ -68,5 +69,19 @@ public class BookCopy {
             throw new BookCopyExceptions.CopyNotAvailableException("Unavailable or not damaged book cannot be withdrawn");
 
         copyStatus = CopyStatus.WITHDRAWN;
+    }
+
+    public void markDamaged() {
+        if (copyStatus != CopyStatus.AVAILABLE)
+            throw new CopyNotAvailableException("Please return book before marking as DAMAGED");
+
+        copyStatus = CopyStatus.DAMAGED;
+    }
+
+    public void markRepaired() {
+        if (copyStatus != CopyStatus.DAMAGED)
+            throw new CopyNotAvailableException("A non-damaged book cannot be repaired.");
+
+        copyStatus = CopyStatus.AVAILABLE;
     }
 }

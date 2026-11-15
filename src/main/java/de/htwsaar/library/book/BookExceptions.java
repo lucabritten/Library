@@ -21,4 +21,10 @@ public class BookExceptions {
             super("duplicate-isbn","ISBN " + isbn + " already exists in database.");
         }
     }
+
+    public static class BookInUseException extends Exceptions.ConflictException {
+        public BookInUseException(Long id) {
+            super("book-in-use", "Book with id=" + id + " cannot be deleted, as its still in use.");
+        }
+    }
 }

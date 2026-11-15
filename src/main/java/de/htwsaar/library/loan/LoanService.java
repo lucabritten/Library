@@ -89,8 +89,6 @@ public class LoanService {
         loan.returnBook(now);
         loan.getCopy().markReturned();
 
-        long daysOverdue = loan.daysOverdue(now);
-
         return LoanDtos.LoanResponse.from(loan, now);
 
     }

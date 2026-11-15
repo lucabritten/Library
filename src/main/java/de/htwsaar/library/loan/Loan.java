@@ -37,6 +37,8 @@ public class Loan {
     }
 
     public Loan(Member member, BookCopy copy, LocalDate loanedAt, LocalDate dueAt) {
+        if (dueAt.isBefore(loanedAt))
+            throw new IllegalArgumentException("Book cannot be returned before being loaned.");
         this.member = member;
         this.copy = copy;
         this.loanedAt = loanedAt;
@@ -67,13 +69,13 @@ public class Loan {
         return returnedAt;
     }
 
-    public boolean isOpen() {
-        return returnedAt == null;
-    }
-
     public void returnBook(LocalDate today) {
         if (returnedAt != null)
             throw new LoanExceptions.CopyAlreadyReturnedException(id);
+
+        if(today.isBefore(loanedAt))
+            throw new IllegalArgumentException("Book cannot be returned earlier than loaned.");
+
         returnedAt = today;
     }
 

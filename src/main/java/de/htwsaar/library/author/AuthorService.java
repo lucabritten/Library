@@ -27,12 +27,7 @@ public class AuthorService {
     }
 
     public AuthorResponse findById(Long id) {
-        return authorRepo.findById(id)
-                .map(AuthorResponse::from)
-                .orElseThrow(() -> {
-                    logger.info("Author with id={} not found", id);
-                    return new AuthorNotFoundException(id);
-                });
+        return AuthorResponse.from(require(id));
     }
 
     public PageResponse<AuthorResponse> search(String lastName, Pageable pageable) {

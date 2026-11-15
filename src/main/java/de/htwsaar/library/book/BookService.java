@@ -49,12 +49,7 @@ public class BookService {
     }
 
     public BookResponse findById(Long id) {
-        return bookRepo.findById(id)
-                .map(BookDtos.BookResponse::from)
-                .orElseThrow(() -> {
-                    logger.info("Book with id={} not found", id);
-                    return new BookNotFoundException(id);
-                });
+        return BookResponse.from(require(id));
     }
 
     @Transactional
@@ -80,7 +75,13 @@ public class BookService {
 
     @Transactional
     public void delete(Long id) {
-        bookRepo.deleteById(id);
+        Book book = require(id);
+        try {
+            bookRepo.delete(book);
+            bookRepo.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new BookExceptions.BookInUseException(id);
+        }
     }
 
     //SChnittstelle zu BookCopy
