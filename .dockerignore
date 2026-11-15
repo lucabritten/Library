@@ -1,6 +1,9 @@
-.gradle/
-build/
+target/
+.mvn/wrapper/maven-wrapper.jar
 .idea/
 *.iml
 .git/
-out/
+.DS_Store
+.env
+*.pem
+src/main/resources/application-local.properties
