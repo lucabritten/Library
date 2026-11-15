@@ -1,32 +1,20 @@
-# --- Build stage ---
+# Java-JRE für Buildphase
 FROM eclipse-temurin:21-jdk AS build
+
 WORKDIR /app
+COPY mvnw pom.xml ./
+COPY .mvn/ .mvn/
+RUN chmod +x mvnw && ./mvnw -B -q dependency:go-offline
 
-# Build-Dateien zuerst: ändern sich selten, Layer bleibt im Cache
-COPY gradlew .
-COPY gradle/ gradle/
-COPY build.gradle.kts settings.gradle.kts ./
-
-# Falls Repo unter Windows ausgecheckt wurde
-RUN chmod +x gradlew
-RUN ./gradlew dependencies --no-deamon
-
-# Quellcode: ändert sich oft, daher erst jetzt
 COPY src/ src/
-RUN ./gradlew bootJar --no-deamon
+RUN ./mvnw -B -q package -DskipTests
 
-# --- Runtime-Stage ---
 FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
-
-# Egeiner System-User ohne Login und root-Rechte
 RUN groupadd --system spring && useradd --system --gid spring spring
-# Build result abholen
-
-COPY --from=build --chown=spring:springapp/spring /app/build/libs/app.jar app.jar
-
-# ab hier nicht mehr root
+COPY --from=build --chown=spring:spring /app/target/app.jar app.jar
 USER spring
 EXPOSE 8080
 
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75"
 ENTRYPOINT ["java", "-jar", "app.jar"]
