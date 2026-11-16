@@ -16,9 +16,5 @@ public class TokenDtos {
             String password
     ) {}
 
-    record TokenResponse(
-            String jwtToken,
-            String authType,
-            long ttlSeconds
-    ) {}
+    record TokenResponse(String jwtToken, String authType, long ttlSeconds) {}
 }

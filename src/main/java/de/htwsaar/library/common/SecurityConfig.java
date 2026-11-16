@@ -27,7 +27,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/members").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/books/**", "/api/v1/authors/**", "/api/v1/copies/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/books/**", "/api/v1/authors/**").permitAll()
                         .requestMatchers("/api/v1/books/**", "/api/v1/authors/**", "/api/v1/copies/**").hasAuthority("SCOPE_catalog:write")
                         .requestMatchers("/actuator/**").hasAuthority("SCOPE_admin")
                         .anyRequest().authenticated())
