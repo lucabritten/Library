@@ -2,6 +2,8 @@ package de.htwsaar.library.member;
 
 import jakarta.persistence.*;
 
+import java.util.Set;
+
 @Entity
 @Table(name = "MEMBER")
 public class Member {
@@ -17,12 +19,24 @@ public class Member {
     @Column(nullable = false)
     private String email;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @Column(nullable = false)
+    private boolean isLocked;
+
     protected Member() {
     }
 
-    public Member(String name, String email) {
+    public Member(String name, String email, String passwordHash) {
         this.name = name;
         this.email = email;
+        this.passwordHash = passwordHash;
+        role = Role.USER;
     }
 
     public Long getId() {
@@ -37,12 +51,31 @@ public class Member {
         return email;
     }
 
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public boolean isLocked() {
+        return isLocked;
+    }
+
+    // member/Member.java
+    public Set<String> getScopes() {
+        return role.scopes();
+    }
+
     @Override
     public String toString() {
         return "Member{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
+                ", role=" + role +
+                ", isLocked=" + isLocked +
                 '}';
     }
 }

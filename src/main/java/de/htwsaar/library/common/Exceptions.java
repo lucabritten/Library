@@ -23,4 +23,10 @@ public class Exceptions {
             return type;
         }
     }
+
+    public static class UnauthorizedException extends RuntimeException {
+        public UnauthorizedException(String message) {
+            super(message);
+        }
+    }
 }

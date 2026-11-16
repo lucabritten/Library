@@ -72,6 +72,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 "Invalid sort property: " + ex.getPropertyName());
     }
 
+    @ExceptionHandler(Exceptions.UnauthorizedException.class)
+    ProblemDetail handleUnauthorized(PropertyReferenceException ex) {
+        logger.info("UNAUTHORIZED-EXCEPTION: {}", ex.getPropertyName());
+
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED,
+                "Unauthorized for action; " + ex.getPropertyName());
+    }
+
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex, HttpHeaders headers,
