@@ -8,9 +8,12 @@ import org.mockito.AdditionalAnswers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
+import static de.htwsaar.library.TestData.aMember;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -21,11 +24,14 @@ public class MemberServiceTest {
     @Mock
     MemberRepo memberRepo;
 
+    @Mock
+    PasswordEncoder encoder;
+
     @InjectMocks
     MemberService memberService;
 
     private static MemberDtos.CreateMemberRequest createMemberRequest(String email) {
-        return new MemberDtos.CreateMemberRequest("Testuser", email);
+        return new MemberDtos.CreateMemberRequest("Testuser", email, "password");
     }
 
     @Test
@@ -62,5 +68,14 @@ public class MemberServiceTest {
                 .isInstanceOf(MemberExceptions.MemberAlreadyExistsException.class);
 
         verify(memberRepo, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void delete_memberWithLoanHistory_throws() {
+        when(memberRepo.findById(1L)).thenReturn(Optional.of(aMember()));
+        doThrow(DataIntegrityViolationException.class).when(memberRepo).flush();
+
+        assertThatThrownBy(() -> memberService.deleteById(1L))
+                .isInstanceOf(MemberExceptions.MemberHasLoansException.class);
     }
 }

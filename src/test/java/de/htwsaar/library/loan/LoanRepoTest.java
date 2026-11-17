@@ -35,8 +35,8 @@ public class LoanRepoTest extends RepositoryTest {
 
     @BeforeEach
     void setUp() {
-        max   = new Member("Max", "max@example.com");
-        erika = new Member("Erika", "erika@example.com");
+        max   = new Member("Max", "max@example.com", "password_hash");
+        erika = new Member("Erika", "erika@example.com", "password_hash");
         Author author = new Author("Walter", "White");
         Book book = new Book("Breaking Bad", "9781617290459", author);
         c1 = new BookCopy(book, "BC-000001");

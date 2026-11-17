@@ -1,7 +1,7 @@
 package de.htwsaar.library.book;
 
-import de.htwsaar.library.author.AuthorDtos;
 import de.htwsaar.library.common.Dtos;
+import de.htwsaar.library.common.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -9,22 +9,25 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import java.util.List;
 import java.util.stream.Stream;
 
+import static de.htwsaar.library.TestTokens.asAdmin;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @WebMvcTest(BookController.class)
+@Import(SecurityConfig.class)
 public class BookControllerTest {
 
     @Autowired
@@ -32,6 +35,9 @@ public class BookControllerTest {
 
     @MockitoBean
     BookService bookService;
+
+    @MockitoBean
+    JwtDecoder jwtDecoder;
 
     private final static String BASE_URI = "/api/v1/books";
 
@@ -57,7 +63,8 @@ public class BookControllerTest {
 
     @Test
     void delete_isSuccessfully_returns404() {
-        assertThat(mvc.delete().uri(BASE_URI + "/{id}", 123L))
+        assertThat(mvc.delete().uri(BASE_URI + "/{id}", 123L)
+                .with(asAdmin()))
                 .hasStatus(HttpStatus.NO_CONTENT);
     }
 
@@ -66,8 +73,25 @@ public class BookControllerTest {
         doThrow(BookExceptions.BookInUseException.class)
                 .when(bookService).delete(123L);
 
-        assertThat(mvc.delete().uri(BASE_URI + "/{id}", 123L))
+        assertThat(mvc.delete().uri(BASE_URI + "/{id}", 123L)
+                .with(asAdmin()))
                 .hasStatus(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void create_withoutToken_returns401() {
+        assertThat(mvc.post().uri(BASE_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "title": "Minecraft",
+                            "isbn": "9781617290459",
+                            "authorId": "1"
+                        }
+                        """))
+                .hasStatus(HttpStatus.UNAUTHORIZED);
+
+        verifyNoInteractions(bookService);
     }
 
     @Test
@@ -76,6 +100,7 @@ public class BookControllerTest {
                 .thenReturn(new BookDtos.BookResponse(123L, "Minecraft", "9781617290459", new BookDtos.AuthorSummary(1L, "Walter")));
 
         assertThat(mvc.post().uri(BASE_URI)
+                .with(asAdmin())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
@@ -93,6 +118,7 @@ public class BookControllerTest {
     @MethodSource("invalidRequests")
     void create_invalidRequest_returns400WithFieldError(String description, String json, String field) {
         assertThat(mvc.post().uri(BASE_URI)
+                .with(asAdmin())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .hasStatus(HttpStatus.BAD_REQUEST)
@@ -129,6 +155,7 @@ public class BookControllerTest {
                 .thenThrow(BookExceptions.DuplicateIsbnException.class);
 
         assertThat(mvc.post().uri(BASE_URI)
+                .with(asAdmin())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {

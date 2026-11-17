@@ -1,36 +1,69 @@
 package de.htwsaar.library.member;
 
+import de.htwsaar.library.common.SecurityConfig;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import java.util.stream.Stream;
 
+import static de.htwsaar.library.TestTokens.asAdmin;
+import static de.htwsaar.library.TestTokens.asMember;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @WebMvcTest(MemberController.class)
+@Import(SecurityConfig.class)
 class MemberControllerTest {
 
     private static final String BASE_URI = "/api/v1/members";
 
-    @Autowired MockMvcTester mvc;
-    @MockitoBean MemberService memberService;
+    @Autowired
+    MockMvcTester mvc;
+
+    @MockitoBean
+    MemberService memberService;
+
+    @MockitoBean
+    JwtDecoder jwtDecoder;
 
     @Test
-    void getById_existingMember_returnsMemberAsJson() {
+    void getMe_returnsMemberDataAsJson() {
         when(memberService.findById(7L))
                 .thenReturn(new MemberDtos.MemberResponse(7L, "Alice", "alice@example.com"));
 
-        assertThat(mvc.get().uri(BASE_URI + "/{id}", 7))
+        assertThat(mvc.get().uri(BASE_URI + "/me")
+                .with(asMember(7L)))
+                .hasStatusOk()
+                .bodyJson().isLenientlyEqualTo("""
+                        {"id": 7, "name": "Alice", "email": "alice@example.com"}
+                        """);
+    }
+
+    @Test
+    void getById_asMember_returns403() {
+        assertThat(mvc.get().uri(BASE_URI + "/{id}", 1)
+                .with(asMember(1L)))
+                .hasStatus(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void getById_asAdmin_returnsMember() {
+        when(memberService.findById(7L))
+                .thenReturn(new MemberDtos.MemberResponse(7L, "Alice", "alice@example.com"));
+
+        assertThat(mvc.get().uri(BASE_URI + "/{id}", 7)
+                .with(asAdmin()))
                 .hasStatusOk()
                 .bodyJson().isLenientlyEqualTo("""
                         {"id": 7, "name": "Alice", "email": "alice@example.com"}
@@ -42,7 +75,8 @@ class MemberControllerTest {
         when(memberService.findById(99L))
                 .thenThrow(new MemberExceptions.MemberNotFoundException(99L));
 
-        assertThat(mvc.get().uri(BASE_URI + "/{id}", 99))
+        assertThat(mvc.get().uri(BASE_URI + "/{id}", 99)
+                .with(asAdmin()))
                 .hasStatus(HttpStatus.NOT_FOUND)
                 .bodyJson()
                 .extractingPath("$.type")
@@ -51,7 +85,8 @@ class MemberControllerTest {
 
     @Test
     void getById_nonNumericId_returns400() {
-        assertThat(mvc.get().uri(BASE_URI + "/abc"))
+        assertThat(mvc.get().uri(BASE_URI + "/abc")
+                .with(asAdmin()))
                 .hasStatus(HttpStatus.BAD_REQUEST);
 
         verifyNoInteractions(memberService);
@@ -65,20 +100,21 @@ class MemberControllerTest {
         assertThat(mvc.post().uri(BASE_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"name": "Alice", "email": "alice@example.com"}
+                        {"name": "Alice", "email": "alice@example.com", "password": "long-password"}
                         """))
                 .hasStatus(HttpStatus.CREATED)
                 .hasHeader("Location", "http://localhost/api/v1/members/7")
                 .bodyJson()
                 .extractingPath("$.id").isEqualTo(7);
 
-        verify(memberService).create(new MemberDtos.CreateMemberRequest("Alice", "alice@example.com"));
+        verify(memberService).create(new MemberDtos.CreateMemberRequest("Alice", "alice@example.com", "long-password"));
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidRequests")
     void create_invalidRequest_returns400WithFieldError(String description, String json, String field) {
         assertThat(mvc.post().uri(BASE_URI)
+                .with(asMember(1L))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .hasStatus(HttpStatus.BAD_REQUEST)
@@ -115,9 +151,10 @@ class MemberControllerTest {
                 .thenThrow(new MemberExceptions.MemberAlreadyExistsException("alice@example.com"));
 
         assertThat(mvc.post().uri(BASE_URI)
+                .with(asMember(1L))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"name": "Alice", "email": "alice@example.com"}
+                        {"name": "Alice", "email": "alice@example.com", "password": "long-password"}
                         """))
                 .hasStatus(HttpStatus.CONFLICT)
                 .bodyJson()
@@ -128,6 +165,7 @@ class MemberControllerTest {
     @Test
     void create_malformedJson_returns400() {
         assertThat(mvc.post().uri(BASE_URI)
+                .with(asMember(1L))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\": \"Alice\""))   // schließende Klammer fehlt
                 .hasStatus(HttpStatus.BAD_REQUEST);
@@ -137,9 +175,20 @@ class MemberControllerTest {
 
     @Test
     void delete_existingMember_returns204() {
-        assertThat(mvc.delete().uri(BASE_URI + "/{id}", 7))
+        assertThat(mvc.delete().uri(BASE_URI + "/{id}", 7)
+                .with(asAdmin()))
                 .hasStatus(HttpStatus.NO_CONTENT);
 
         verify(memberService).deleteById(7L);
+    }
+
+    @Test
+    void deleteMe_pipesMemberIdFromToken() {
+        long memberId = 1L;
+        assertThat(mvc.delete().uri(BASE_URI + "/me")
+                .with(asMember(memberId)))
+                .hasStatus(HttpStatus.NO_CONTENT);
+
+        verify(memberService).deleteById(memberId);
     }
 }

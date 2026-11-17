@@ -11,6 +11,7 @@ class AuthorDeleteIT extends IntegrationTest {
         createBook(author);
 
         client.delete().uri(BASE_URI + "/authors/{id}", author)
+                .headers(h -> h.setBearerAuth(adminToken()))
                 .exchange()
                 .expectStatus().isEqualTo(409);
 
@@ -24,6 +25,7 @@ class AuthorDeleteIT extends IntegrationTest {
         long author = createAuthor();
 
         client.delete().uri(BASE_URI + "/authors/{id}", author)
+                .headers(h -> h.setBearerAuth(adminToken()))
                 .exchange()
                 .expectStatus().isNoContent();
 

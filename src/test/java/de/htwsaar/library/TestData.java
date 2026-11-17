@@ -34,7 +34,7 @@ public class TestData {
 
 
     public static Member aMember() {
-        return new Member("Testuser", "test@example.com");
+        return new Member("Testuser", "test@example.com", "password");
     }
 
     public static Loan aLoan() {
