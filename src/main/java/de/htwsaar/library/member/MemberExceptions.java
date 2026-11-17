@@ -19,4 +19,10 @@ public class MemberExceptions {
             super("member-already-exists","Member with email-address " + email + " already exists.");
         }
     }
+
+    public static class MemberHasLoansException extends Exceptions.ConflictException {
+        public MemberHasLoansException(Long id) {
+            super("member-has-loans", "Member with id=" + id + " has loan history and cannot be deleted.");
+        }
+    }
 }

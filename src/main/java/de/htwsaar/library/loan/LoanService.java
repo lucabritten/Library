@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -39,22 +40,22 @@ public class LoanService {
         this.clock = clock;
     }
 
-    public Loan require(Long id) {
-        return loanRepo.findById(id)
-                .orElseThrow(() -> {
-                    logger.info("Loan with id={} not found", id);
-                    return new LoanExceptions.LoanNotFoundException(id);
-                });
-    }
+//    public Loan require(Long id) {
+//        return loanRepo.findById(id)
+//                .orElseThrow(() -> {
+//                    logger.info("Loan with id={} not found", id);
+//                    return new LoanExceptions.LoanNotFoundException(id);
+//                });
+//    }
 
-    public LoanDtos.LoanResponse findById(Long id) {
+    public LoanDtos.LoanResponse findById(Long loanId, Long memberId, boolean isAdmin) {
         LocalDate now = LocalDate.now(clock);
-        return LoanDtos.LoanResponse.from(require(id), now);
+        Loan loan = requireVisible(loanId, memberId, isAdmin);
+        return LoanDtos.LoanResponse.from(loan, now);
     }
 
     @Transactional
-    public LoanDtos.LoanResponse lend(LoanDtos.CreateLoanRequest req) {
-        Long memberId = req.memberId();
+    public LoanDtos.LoanResponse lend(long memberId, LoanDtos.CreateLoanRequest req) {
         String inventoryNumber = req.inventoryNumber();
 
         Member member = memberService.require(memberId);
@@ -82,14 +83,19 @@ public class LoanService {
     }
 
     @Transactional
-    public LoanDtos.LoanResponse returnLoan(Long loanId) {
-        Loan loan = require(loanId);
+    public LoanDtos.LoanResponse returnLoan(long loanId, long memberId, boolean isAdmin) {
+        Loan loan = requireVisible(loanId, memberId, isAdmin);
         LocalDate now = LocalDate.now(clock);
 
         loan.returnBook(now);
         loan.getCopy().markReturned();
 
         return LoanDtos.LoanResponse.from(loan, now);
+    }
 
+    private Loan requireVisible(Long loanId, long memberId, boolean admin) {
+        return (admin ? loanRepo.findById(loanId)
+                : loanRepo.findByIdAndMemberId(loanId, memberId))
+                .orElseThrow(() -> new LoanExceptions.LoanNotFoundException(loanId));
     }
 }

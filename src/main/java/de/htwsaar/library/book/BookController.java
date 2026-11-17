@@ -59,6 +59,8 @@ public class BookController {
     @Operation(summary = "Add book to catalog") //Swagger-UI Doku
     @ApiResponse(responseCode = "201", description = "Created successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input")
+    @ApiResponse(responseCode = "401", description = "Protected endpoint. Authentication token required.")
+    @ApiResponse(responseCode = "403", description = "Privileges are not sufficient to use this endpoint.")
     @ApiResponse(responseCode = "409", description = "ISBN already exists") //Swagger-UI Doku
     @PostMapping
     public ResponseEntity<BookResponse> create(@Valid @RequestBody CreateBookRequest req) {
@@ -78,6 +80,8 @@ public class BookController {
 
     @Operation(summary = "Delete book from catalog by id")
     @ApiResponse(responseCode = "204", description = "Book deleted successfully")
+    @ApiResponse(responseCode = "401", description = "Protected endpoint. Authentication token required.")
+    @ApiResponse(responseCode = "403", description = "Privileges are not sufficient to use this endpoint.")
     @ApiResponse(responseCode = "409", description = "Book is linked to copies, delete those copies first.")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

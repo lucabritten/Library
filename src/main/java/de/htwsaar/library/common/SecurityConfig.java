@@ -13,7 +13,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -27,6 +26,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/members").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/books/**", "/api/v1/authors/**", "/api/v1/copies/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/members/me").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/members/me").authenticated()
+                        .requestMatchers("/api/v1/members/**").hasAuthority("SCOPE_admin")
                         .requestMatchers("/api/v1/books/**", "/api/v1/authors/**", "/api/v1/copies/**").hasAuthority("SCOPE_catalog:write")
                         .requestMatchers("/actuator/**").hasAuthority("SCOPE_admin")
                         .anyRequest().authenticated())

@@ -12,6 +12,7 @@ public class TokenDtos {
             @Email
             String email,
 
+            @NotBlank
             @Size(max = 72)
             String password
     ) {}

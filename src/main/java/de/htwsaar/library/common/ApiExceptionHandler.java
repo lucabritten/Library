@@ -73,11 +73,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(Exceptions.UnauthorizedException.class)
-    ProblemDetail handleUnauthorized(PropertyReferenceException ex) {
-        logger.info("UNAUTHORIZED-EXCEPTION: {}", ex.getPropertyName());
+    ProblemDetail handleUnauthorized(Exceptions.UnauthorizedException ex) {
+        logger.info("UNAUTHORIZED-EXCEPTION: {}", ex.getMessage());
 
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED,
-                "Unauthorized for action; " + ex.getPropertyName());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Unauthorized for action.");
+        pd.setType(URI.create("https://library.example/problems/unauthorized"));
+        pd.setTitle("Unauthorized access");
+
+        return pd;
     }
 
     @Override

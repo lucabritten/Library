@@ -4,6 +4,7 @@ import de.htwsaar.library.member.MemberDtos.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +61,12 @@ public class MemberService {
 
     @Transactional
     public void deleteById(Long id) {
-        memberRepo.deleteById(id);
+        Member member = require(id);
+        try {
+            memberRepo.delete(member);
+            memberRepo.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new MemberExceptions.MemberHasLoansException(id);
+        }
     }
 }
