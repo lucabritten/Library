@@ -1,6 +1,7 @@
 package de.htwsaar.library.author;
 
 import de.htwsaar.library.common.Dtos;
+import de.htwsaar.library.common.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -8,22 +9,28 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import java.util.List;
 import java.util.stream.Stream;
 
+import static de.htwsaar.library.TestTokens.asAdmin;
+import static de.htwsaar.library.TestTokens.asMember;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 
 @WebMvcTest(AuthorController.class)
+@Import(SecurityConfig.class)
 public class AuthorControllerTest {
 
     @Autowired
@@ -31,6 +38,9 @@ public class AuthorControllerTest {
 
     @MockitoBean
     AuthorService authorService;
+
+    @MockitoBean
+    JwtDecoder jwtDecoder;
 
     private final static String BASE_URI = "/api/v1/authors";
 
@@ -57,7 +67,8 @@ public class AuthorControllerTest {
 
     @Test
     void delete_returnsNoContentWhenSuccess() {
-        assertThat(mvc.delete().uri(BASE_URI + "/42"))
+        assertThat(mvc.delete().uri(BASE_URI + "/42")
+                .with(asAdmin()))
                 .hasStatus(HttpStatus.NO_CONTENT);
     }
 
@@ -66,8 +77,24 @@ public class AuthorControllerTest {
         doThrow(AuthorExceptions.AuthorInUseException.class)
                 .when(authorService).delete(42L);
 
-        assertThat(mvc.delete().uri(BASE_URI + "/42"))
+        assertThat(mvc.delete().uri(BASE_URI + "/42")
+                .with(asAdmin()))
                 .hasStatus(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void create_withoutToken_returns401() {
+        assertThat(mvc.post().uri(BASE_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "firstName": "Karl",
+                            "lastName": "Heinz"
+                        }
+                        """))
+                .hasStatus(HttpStatus.UNAUTHORIZED);
+
+        verifyNoInteractions(authorService);
     }
 
     @Test
@@ -76,6 +103,7 @@ public class AuthorControllerTest {
                 .thenReturn(new AuthorDtos.AuthorResponse(42L, "Karl", "Heinz"));
 
         assertThat(mvc.post().uri(BASE_URI)
+                .with(asAdmin())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
@@ -92,6 +120,7 @@ public class AuthorControllerTest {
     @MethodSource("invalidRequests")
     void create_invalidRequest_returns400WithFieldError(String description, String json, String field) {
         assertThat(mvc.post().uri(BASE_URI)
+                .with(asAdmin())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .hasStatus(HttpStatus.BAD_REQUEST)

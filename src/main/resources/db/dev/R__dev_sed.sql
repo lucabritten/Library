@@ -152,7 +152,11 @@ INSERT INTO BOOKS (ID, TITLE, ISBN, AUTHOR_ID) VALUES
                                                    (100, 'Sternstunden der Menschheit', '9783596221042', 15)
 ON CONFLICT (ID) DO NOTHING;
 
+DELETE FROM member WHERE ID = 0;
+INSERT INTO Member (ID, NAME, EMAIL, password_hash, role, is_locked) VALUES (0, 'admin', 'admin@admin.com', '{bcrypt}$2a$10$0aGjPk.pMuBwtjjUw1G8YeuHPmbNLU8hb6pbwVMKORR68Bi7jcHbe', 'ADMIN', false)
+ON CONFLICT (ID) DO NOTHING;
 
+SELECT setval('member_seq', 1000);
 SELECT setval('author_seq', 1000);
 SELECT setval('book_seq', 1000);
 

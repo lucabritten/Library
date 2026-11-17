@@ -3,6 +3,7 @@ package de.htwsaar.library.member;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.aspectj.weaver.ast.Not;
 
 public class MemberDtos {
 
@@ -15,7 +16,11 @@ public class MemberDtos {
             @NotBlank(message = "Email cannot be blank")
             @Email
             @Size(max = 320)
-            String email
+            String email,
+
+            @NotBlank
+            @Size(min = 12, max = 72)
+            String password
     ) {}
 
     public record MemberResponse(

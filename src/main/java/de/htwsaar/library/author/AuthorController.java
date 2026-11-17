@@ -53,6 +53,8 @@ public class AuthorController {
     @Operation(summary = "Add an author")
     @ApiResponse(responseCode = "201", description = "Created successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input")
+    @ApiResponse(responseCode = "401", description = "Protected endpoint. Authentication token required.")
+    @ApiResponse(responseCode = "403", description = "Privileges are not sufficient to use this endpoint.")
     @PostMapping
     public ResponseEntity<AuthorResponse> create(@Valid @RequestBody AuthorDtos.CreateAuthorRequest req) {
         AuthorResponse createdAuthor = authorService.create(req);
@@ -70,6 +72,8 @@ public class AuthorController {
 
 
     @Operation(summary = "Delete author")
+    @ApiResponse(responseCode = "401", description = "Protected endpoint. Authentication token required.")
+    @ApiResponse(responseCode = "403", description = "Privileges are not sufficient to use this endpoint.")
     @ApiResponse(responseCode = "409", description = "Author is still connected to other entities in DB.")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

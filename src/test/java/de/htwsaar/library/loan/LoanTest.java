@@ -17,7 +17,7 @@ public class LoanTest {
     private static final LocalDate DUE = LocalDate.of(2026, 7, 24);
 
     private static Loan loanDueOn(LocalDate loanedAt, LocalDate dueAt) {
-        Member member = new Member("Alice", "alice@hotmail.com");
+        Member member = new Member("Alice", "alice@hotmail.com", "password");
         Author author = new Author("Michael", "Ende");
         Book book = new Book("Momo", "9783522202008", author);
         BookCopy copy = new BookCopy(book, "BC-00001");

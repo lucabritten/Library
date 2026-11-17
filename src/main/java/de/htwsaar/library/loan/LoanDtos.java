@@ -10,10 +10,6 @@ import java.time.LocalDate;
 public class LoanDtos {
 
     public record CreateLoanRequest(
-            @NotNull
-            @Positive
-            Long memberId,
-
             @NotBlank
             String inventoryNumber
     ) {}

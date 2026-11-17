@@ -15,8 +15,8 @@ public class MemberRepoTest extends RepositoryTest {
     @Test
     void save_duplicateEmail_throwsDataIntegrityViolation() {
         String email = "bernd@capitol.com";
-        given(new Member("Bernd", email));
-        Member duplicate = new Member("Bernd-clon", email);
+        given(new Member("Bernd", email, "password_hash"));
+        Member duplicate = new Member("Bernd-clon", email, "password_hash");
 
         assertThatThrownBy(() -> repo.saveAndFlush(duplicate))
                 .isInstanceOf(DataIntegrityViolationException.class);

@@ -1,7 +1,5 @@
 package de.htwsaar.library.common;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 public class Exceptions {
 
@@ -21,6 +19,12 @@ public class Exceptions {
 
         public String getType() {
             return type;
+        }
+    }
+
+    public static class UnauthorizedException extends RuntimeException {
+        public UnauthorizedException(String message) {
+            super(message);
         }
     }
 }

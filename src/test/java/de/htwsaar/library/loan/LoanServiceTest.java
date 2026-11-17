@@ -8,6 +8,7 @@ import de.htwsaar.library.copy.CopyStatus;
 import de.htwsaar.library.member.Member;
 import de.htwsaar.library.member.MemberExceptions;
 import de.htwsaar.library.member.MemberService;
+import de.htwsaar.library.member.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,13 +41,15 @@ class LoanServiceTest {
     private LoanService service;
     private Member member;
     private BookCopy copy;
+    private Loan sampleLoan;
 
     @BeforeEach
     void setUp() {
         service = new LoanService(loanRepo, new LoanProperties(5, Period.ofDays(14)),
                 memberService, bookCopyService, CLOCK);
         member = TestData.aMember();
-        copy = TestData.aCopy();   // AVAILABLE
+        copy = TestData.aCopy();// AVAILABLE
+        sampleLoan = new Loan(member, copy,  TODAY.minusDays(1), TODAY.plusWeeks(3));
     }
 
     private void memberAndCopyExist() {
@@ -55,12 +58,22 @@ class LoanServiceTest {
     }
 
     @Test
-    void require_noLoanWithId_throwsNotFound() {
+    void findById_noLoanWithId_throwsNotFound() {
         when(loanRepo.findById(any()))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.require(123L))
+        assertThatThrownBy(() -> service.findById(123L, 999L, true))
                 .isInstanceOf(LoanExceptions.LoanNotFoundException.class);
+    }
+
+    @Test
+    void findById_asAdmin_usesFindByIdWithoutOwner() {
+        when(loanRepo.findById(1L))
+                .thenReturn(Optional.of(sampleLoan));
+
+        service.findById(1L, 1L, true);
+
+        verify(loanRepo, never()).findByIdAndMemberId(1L, 1L);
     }
 
     @Test
@@ -68,7 +81,7 @@ class LoanServiceTest {
         memberAndCopyExist();
         when(loanRepo.countByMemberIdAndReturnedAtIsNull(1L)).thenReturn(4L);
 
-        LoanDtos.LoanResponse response = service.lend(new LoanDtos.CreateLoanRequest(1L, "BC-000001"));
+        LoanDtos.LoanResponse response = service.lend(1L,new LoanDtos.CreateLoanRequest( "BC-000001"));
 
         assertThat(response.loanedAt()).isEqualTo(TODAY);
         assertThat(response.dueAt()).isEqualTo(LocalDate.of(2026, 7, 24));
@@ -80,7 +93,7 @@ class LoanServiceTest {
         memberAndCopyExist();
         when(loanRepo.countByMemberIdAndReturnedAtIsNull(1L)).thenReturn(5L);
 
-        assertThatThrownBy(() -> service.lend(new LoanDtos.CreateLoanRequest(1L, "BC-000001")))
+        assertThatThrownBy(() -> service.lend(1L,new LoanDtos.CreateLoanRequest( "BC-000001")))
                 .isInstanceOf(LoanExceptions.LoanLimitExceededException.class);
 
         assertThat(copy.getStatus()).isEqualTo(CopyStatus.AVAILABLE);
@@ -92,7 +105,7 @@ class LoanServiceTest {
         memberAndCopyExist();
         when(loanRepo.countByMemberIdAndReturnedAtIsNull(1L)).thenReturn(1L);
 
-        LoanDtos.LoanResponse response = service.lend(new LoanDtos.CreateLoanRequest(1L, "BC-000001"));
+        LoanDtos.LoanResponse response = service.lend(1L,new LoanDtos.CreateLoanRequest( "BC-000001"));
 
         assertThat(response.dueAt()).isEqualTo(TODAY.plusDays(14));
     }
@@ -102,7 +115,7 @@ class LoanServiceTest {
         memberAndCopyExist();
         when(loanRepo.countByMemberIdAndReturnedAtIsNull(1L)).thenReturn(1L);
 
-        service.lend(new LoanDtos.CreateLoanRequest(1L, "BC-000001"));
+        service.lend(1L,new LoanDtos.CreateLoanRequest( "BC-000001"));
 
         assertThat(copy.getStatus()).isEqualTo(CopyStatus.LOANED);
     }
@@ -113,7 +126,7 @@ class LoanServiceTest {
         copy.markLoaned();
         when(loanRepo.countByMemberIdAndReturnedAtIsNull(1L)).thenReturn(1L);
 
-        assertThatThrownBy(() -> service.lend(new LoanDtos.CreateLoanRequest(1L, "BC-000001")))
+        assertThatThrownBy(() -> service.lend(1L,new LoanDtos.CreateLoanRequest( "BC-000001")))
                 .isInstanceOf(BookCopyExceptions.CopyNotAvailableException.class);
         verify(loanRepo, never()).saveAndFlush(any());
     }
@@ -123,7 +136,7 @@ class LoanServiceTest {
         when(memberService.require(99L))
                 .thenThrow(new MemberExceptions.MemberNotFoundException(99L));
 
-        assertThatThrownBy(() -> service.lend(new LoanDtos.CreateLoanRequest(99L, "BC-000001")))
+        assertThatThrownBy(() -> service.lend(99L,new LoanDtos.CreateLoanRequest( "BC-000001")))
                 .isInstanceOf(MemberExceptions.MemberNotFoundException.class);
 
         verify(loanRepo, never()).saveAndFlush(any());
@@ -135,19 +148,17 @@ class LoanServiceTest {
         when(loanRepo.countByMemberIdAndReturnedAtIsNull(1L)).thenReturn(1L);
         when(loanRepo.saveAndFlush(any())).thenThrow(DataIntegrityViolationException.class);
 
-        assertThatThrownBy(() -> service.lend(new LoanDtos.CreateLoanRequest(1L, "BC-000001")))
+        assertThatThrownBy(() -> service.lend(1L,new LoanDtos.CreateLoanRequest( "BC-000001")))
                 .isInstanceOf(BookCopyExceptions.CopyNotAvailableException.class);
     }
 
     @Test
     void returnLoan_returnedBook_isAvailable() {
         copy.markLoaned();
-        Loan loan = new Loan(member, copy, TODAY.minusDays(1), TODAY.plusDays(1));
 
-        when(loanRepo.findById(any()))
-                .thenReturn(Optional.of(loan));
+        when(loanRepo.findByIdAndMemberId(1L, 999L)).thenReturn(Optional.of(sampleLoan));
 
-        service.returnLoan(1L);
+        service.returnLoan(1L, 999L, false);
 
         assertThat(copy.getStatus()).isEqualTo(CopyStatus.AVAILABLE);
     }
@@ -157,10 +168,9 @@ class LoanServiceTest {
         copy.markLoaned();
         Loan loan = new Loan(member, copy, TODAY.minusDays(10), TODAY.minusDays(5));
 
-        when(loanRepo.findById(any()))
-                .thenReturn(Optional.of(loan));
+        when(loanRepo.findByIdAndMemberId(1L, 999L)).thenReturn(Optional.of(loan));
 
-        LoanDtos.LoanResponse response = service.returnLoan(1L);
+        LoanDtos.LoanResponse response = service.returnLoan(1L, 999L, false);
 
         assertThat(response.daysOverdue()).isEqualTo(5);
     }
@@ -170,10 +180,9 @@ class LoanServiceTest {
         copy.markLoaned();
         Loan loan = new Loan(member, copy, TODAY.minusDays(10), TODAY.minusDays(5));
 
-        when(loanRepo.findById(any()))
-                .thenReturn(Optional.of(loan));
+        when(loanRepo.findByIdAndMemberId(1L, 999L)).thenReturn(Optional.of(loan));
 
-        LoanDtos.LoanResponse response = service.returnLoan(1L);
+        LoanDtos.LoanResponse response = service.returnLoan(1L, 999L, false);
 
         assertThat(response.returnedAt()).isEqualTo(TODAY);
     }
@@ -182,13 +191,12 @@ class LoanServiceTest {
     void returnLoan_alreadyReturnedLoan_throws() {
         copy.markLoaned();
         Loan loan = new Loan(member, copy, TODAY.minusDays(10), TODAY.minusDays(5));
-        when(loanRepo.findById(any()))
-                .thenReturn(Optional.of(loan));
 
-        service.returnLoan(1L);
+        when(loanRepo.findByIdAndMemberId(1L, 999L)).thenReturn(Optional.of(sampleLoan));
 
-       assertThatThrownBy(() -> service.returnLoan(1L))
+        LoanDtos.LoanResponse response = service.returnLoan(1L, 999L, false);
+
+       assertThatThrownBy(() -> service.returnLoan(1L, 999L, false))
                .isInstanceOf(LoanExceptions.CopyAlreadyReturnedException.class);
     }
-
 }

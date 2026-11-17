@@ -4,8 +4,12 @@ import de.htwsaar.library.member.MemberDtos.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -16,8 +20,11 @@ public class MemberService {
 
     private final MemberRepo memberRepo;
 
-    public MemberService(MemberRepo memberRepo) {
+    private final PasswordEncoder encoder;
+
+    public MemberService(MemberRepo memberRepo, PasswordEncoder encoder) {
         this.memberRepo = memberRepo;
+        this.encoder = encoder;
     }
 
     public MemberResponse findById(Long id) {
@@ -27,9 +34,12 @@ public class MemberService {
     @Transactional
     public MemberResponse create(CreateMemberRequest req) {
         String normEmail = normalizeEmail(req.email());
+        String hashedPassword = encoder.encode(req.password());
+
         if (memberRepo.existsByEmail(normEmail))
             throw new MemberExceptions.MemberAlreadyExistsException(normEmail);
-        Member saved = memberRepo.saveAndFlush(new Member(req.name(), normEmail));
+
+        Member saved = memberRepo.saveAndFlush(new Member(req.name(), normEmail, hashedPassword));
         return MemberResponse.from(saved);
     }
 
@@ -45,8 +55,18 @@ public class MemberService {
                 });
     }
 
+    public Optional<Member> findByEmail(String email) {
+        return memberRepo.findByEmail(email);
+    }
+
     @Transactional
     public void deleteById(Long id) {
-        memberRepo.deleteById(id);
+        Member member = require(id);
+        try {
+            memberRepo.delete(member);
+            memberRepo.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new MemberExceptions.MemberHasLoansException(id);
+        }
     }
 }

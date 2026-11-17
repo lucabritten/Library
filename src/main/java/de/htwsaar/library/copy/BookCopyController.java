@@ -33,6 +33,8 @@ public class BookCopyController {
     @Operation(summary = "Add book-copy to catalog")
     @ApiResponse(responseCode = "201", description = "Book-copy added successfully")
     @ApiResponse(responseCode = "400", description = "Invalid field input")
+    @ApiResponse(responseCode = "401", description = "Protected endpoint. Authentication token required.")
+    @ApiResponse(responseCode = "403", description = "Privileges are not sufficient to use this endpoint.")
     @ApiResponse(responseCode = "404", description = "Related book not found")
     @PostMapping
     public ResponseEntity<BookCopyDto.BookCopyResponse> create(@Valid @RequestBody BookCopyDto.CreateBookCopyRequest req) {
@@ -50,6 +52,8 @@ public class BookCopyController {
     }
 
     @Operation(summary = "Withdraw copy from catalog by inventory-number")
+    @ApiResponse(responseCode = "401", description = "Protected endpoint. Authentication token required.")
+    @ApiResponse(responseCode = "403", description = "Privileges are not sufficient to use this endpoint.")
     @ApiResponse(responseCode = "409", description = "Copy is not available.")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PutMapping("/{inventoryNumber}")
