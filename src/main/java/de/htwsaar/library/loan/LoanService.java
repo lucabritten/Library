@@ -64,9 +64,11 @@ public class LoanService {
         try {
             LoanDtos.LoanResponse loanResponse = doLend(memberId, req);
             loanMetrics.lendSucceeded();
+            logger.atInfo().setMessage("[LOAN] Loan created").addKeyValue("loanId", loanResponse.id()).addKeyValue("memberId", memberId).addKeyValue("inventoryNumber", req.inventoryNumber()).log();
             return loanResponse;
         } catch (Exceptions.ConflictException e){
             loanMetrics.lendFailed(e.getType());
+            logger.atInfo().setMessage("[LOAN] Loan failed").addKeyValue("memberId", memberId).addKeyValue("inventoryNumber", req.inventoryNumber()).addKeyValue("cause", e.getType()).log();
             throw e;
         }
     }
@@ -108,6 +110,7 @@ public class LoanService {
 
         boolean isOverdue = loan.daysOverdue(now) > 0;
         loanMetrics.returned(isOverdue);
+        logger.atInfo().setMessage("[LOAN] Loan returned").addKeyValue("loanId", loanId).addKeyValue("overdue", loan.daysOverdue(now)).log();
 
         return LoanDtos.LoanResponse.from(loan, now);
     }

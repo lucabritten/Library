@@ -12,9 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class BookCopyService {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(BookCopyService.class);
-
     private final BookCopyRepo bookCopyRepo;
 
     private final BookService bookService;
@@ -31,7 +28,6 @@ public class BookCopyService {
     public BookCopy require(String inventoryNumber) {
         return bookCopyRepo.findByInventoryNumber(inventoryNumber)
                 .orElseThrow(() -> {
-                    logger.info("Book-copy with inventory-number={} not found.", inventoryNumber);
                     return new BookCopyExceptions.BookCopyNotFoundException(inventoryNumber);
                 });
     }

@@ -25,7 +25,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ProblemDetail optimisticLock(OptimisticLockingFailureException ex) {
-        logger.info("Optimistic lock conflict: {}", ex.getMessage()); // Details nur im LOG
+        logger.atInfo()
+                .setMessage("Optimistic lock conflict")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
                 "The resource was modified concurrently. Please reload and try again.");
@@ -37,7 +40,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exceptions.ConflictException.class)
     ProblemDetail authorInUse(Exceptions.ConflictException ex) {
-        logger.info("CONFLICT-EXCEPTION: {}", ex.getMessage());
+        logger.atInfo()
+                .setMessage("Conflict-exception")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
@@ -51,7 +57,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exceptions.NotFoundException.class)
     ProblemDetail notFound(Exceptions.NotFoundException ex) {
-        logger.info("NOT-FOUND-EXCEPTION: {}", ex.getMessage());
+        logger.atInfo()
+                .setMessage("not-found-exception")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
@@ -66,7 +75,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(PropertyReferenceException.class)
     ProblemDetail handleBadSort(PropertyReferenceException ex) {
-        logger.info("PROPERY-REFERENCY-EXCEPTION: Invalid sort property: {}", ex.getPropertyName());
+        logger.atInfo()
+                .setMessage("property-reference-exception")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Invalid sort property: " + ex.getPropertyName());
@@ -74,7 +86,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exceptions.UnauthorizedException.class)
     ProblemDetail handleUnauthorized(Exceptions.UnauthorizedException ex) {
-        logger.info("UNAUTHORIZED-EXCEPTION: {}", ex.getMessage());
+        logger.atInfo()
+                .setMessage("unauthorized-exception")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Unauthorized for action.");
         pd.setType(URI.create("https://library.example/problems/unauthorized"));
@@ -98,7 +113,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ProblemDetail unexpectedError(Exception ex) {
-        logger.error("Unexpected error: ", ex);
+        logger.atError()
+                .setMessage("Unexpected error")
+                .addKeyValue("exception", ex)
+                .addKeyValue("message", ex.getMessage())
+                .addKeyValue("stacktrace", ex.getStackTrace())
+                .log();
 
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred");

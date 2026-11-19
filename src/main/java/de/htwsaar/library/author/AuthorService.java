@@ -17,9 +17,6 @@ import org.springframework.util.StringUtils;
 @Transactional(readOnly = true)
 public class AuthorService {
 
-    private final static Logger logger =
-            LoggerFactory.getLogger(AuthorService.class);
-
     private final AuthorRepo authorRepo;
 
     public AuthorService(AuthorRepo authorRepo) {
@@ -64,7 +61,6 @@ public class AuthorService {
     public Author require(Long id) {
         return authorRepo.findById(id)
                 .orElseThrow(() -> {
-                    logger.info("Author with id={} not found.", id);
                     return new AuthorExceptions.AuthorNotFoundException(id);
                 });
     }
