@@ -42,7 +42,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail authorInUse(Exceptions.ConflictException ex) {
         logger.atInfo()
                 .setMessage("Conflict-exception")
-                .addKeyValue("message", ex.getMessage())
+                .addKeyValue("message", ex.getType())
                 .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
