@@ -1,5 +1,6 @@
 package de.htwsaar.library.loan;
 
+import de.htwsaar.library.common.Exceptions;
 import de.htwsaar.library.copy.BookCopy;
 import de.htwsaar.library.copy.BookCopyExceptions;
 import de.htwsaar.library.copy.BookCopyService;
@@ -27,10 +28,12 @@ public class LoanService {
 
     private final Clock clock;
 
+    private final LoanMetrics loanMetrics;
+
     private final static Logger logger =
             LoggerFactory.getLogger(LoanService.class);
 
-    public LoanService(LoanRepo loanRepo, LoanProperties loanProperties,MemberService memberService, BookCopyService bookCopyService, Clock clock) {
+    public LoanService(LoanRepo loanRepo, LoanProperties loanProperties,MemberService memberService, BookCopyService bookCopyService, Clock clock, LoanMetrics loanMetrics) {
         this.loanRepo = loanRepo;
         this.loanProperties = loanProperties;
 
@@ -38,6 +41,7 @@ public class LoanService {
         this.bookCopyService = bookCopyService;
 
         this.clock = clock;
+        this.loanMetrics = loanMetrics;
     }
 
 //    public Loan require(Long id) {
@@ -54,8 +58,20 @@ public class LoanService {
         return LoanDtos.LoanResponse.from(loan, now);
     }
 
+
     @Transactional
     public LoanDtos.LoanResponse lend(long memberId, LoanDtos.CreateLoanRequest req) {
+        try {
+            LoanDtos.LoanResponse loanResponse = doLend(memberId, req);
+            loanMetrics.lendSucceeded();
+            return loanResponse;
+        } catch (Exceptions.ConflictException e){
+            loanMetrics.lendFailed(e.getType());
+            throw e;
+        }
+    }
+
+    private LoanDtos.LoanResponse doLend(long memberId, LoanDtos.CreateLoanRequest req) {
         String inventoryNumber = req.inventoryNumber();
 
         Member member = memberService.require(memberId);
@@ -89,6 +105,9 @@ public class LoanService {
 
         loan.returnBook(now);
         loan.getCopy().markReturned();
+
+        boolean isOverdue = loan.daysOverdue(now) > 0;
+        loanMetrics.returned(isOverdue);
 
         return LoanDtos.LoanResponse.from(loan, now);
     }

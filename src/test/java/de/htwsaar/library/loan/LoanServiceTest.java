@@ -9,8 +9,11 @@ import de.htwsaar.library.member.Member;
 import de.htwsaar.library.member.MemberExceptions;
 import de.htwsaar.library.member.MemberService;
 import de.htwsaar.library.member.Role;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -42,11 +45,13 @@ class LoanServiceTest {
     private Member member;
     private BookCopy copy;
     private Loan sampleLoan;
+    private MeterRegistry registry;
 
     @BeforeEach
     void setUp() {
+        registry = new SimpleMeterRegistry();
         service = new LoanService(loanRepo, new LoanProperties(5, Period.ofDays(14)),
-                memberService, bookCopyService, CLOCK);
+                memberService, bookCopyService, CLOCK, new LoanMetrics(registry, loanRepo));
         member = TestData.aMember();
         copy = TestData.aCopy();// AVAILABLE
         sampleLoan = new Loan(member, copy,  TODAY.minusDays(1), TODAY.plusWeeks(3));
@@ -153,6 +158,31 @@ class LoanServiceTest {
     }
 
     @Test
+    void lend_succeededLoan_isCountedInMetric() {
+        memberAndCopyExist();
+        when(loanRepo.countByMemberIdAndReturnedAtIsNull(1L)).thenReturn(1L);
+
+        service.lend(1L,new LoanDtos.CreateLoanRequest( "BC-000001"));
+
+        assertThat(registry.get("library.loans.created")
+                .tag("outcome", "succeeded")
+                .counter().count()).isEqualTo(1L);
+    }
+
+    @Test
+    void lend_failedLoan_isCountedInMetric() {
+        memberAndCopyExist();
+        when(loanRepo.countByMemberIdAndReturnedAtIsNull(1L)).thenReturn(5L);
+
+        assertThatThrownBy(() -> service.lend(1L,new LoanDtos.CreateLoanRequest( "BC-000001")))
+                .isInstanceOf(LoanExceptions.LoanLimitExceededException.class);
+
+        assertThat(registry.get("library.loans.created")
+                .tag("outcome", "loan-limit-exceeded")
+                .counter().count()).isEqualTo(1L);
+    }
+
+    @Test
     void returnLoan_returnedBook_isAvailable() {
         copy.markLoaned();
 
@@ -190,13 +220,27 @@ class LoanServiceTest {
     @Test
     void returnLoan_alreadyReturnedLoan_throws() {
         copy.markLoaned();
-        Loan loan = new Loan(member, copy, TODAY.minusDays(10), TODAY.minusDays(5));
 
         when(loanRepo.findByIdAndMemberId(1L, 999L)).thenReturn(Optional.of(sampleLoan));
 
-        LoanDtos.LoanResponse response = service.returnLoan(1L, 999L, false);
+        service.returnLoan(1L, 999L, false);
 
        assertThatThrownBy(() -> service.returnLoan(1L, 999L, false))
                .isInstanceOf(LoanExceptions.CopyAlreadyReturnedException.class);
+    }
+
+    @Test
+    void returnLoan_lateReturn_IsCountedInMetric() {
+        Loan lateLoan = new Loan(member, copy, TODAY.minusDays(10), TODAY.minusDays(1));
+        copy.markLoaned();
+
+        when(loanRepo.findByIdAndMemberId(1L, 9L))
+                .thenReturn(Optional.of(lateLoan));
+
+        service.returnLoan(1L, 9L, false);
+
+        assertThat(registry.get("library.loans.returned")
+                .tag("return_time", "late")
+                .counter().count()).isEqualTo(1.0);
     }
 }
