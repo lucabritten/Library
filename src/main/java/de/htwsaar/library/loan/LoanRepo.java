@@ -15,4 +15,6 @@ interface LoanRepo extends JpaRepository<Loan, Long> {
 
     @EntityGraph(attributePaths = "copy")
     Optional<Loan> findByIdAndMemberId(Long id, Long memberId);
+
+    long countByReturnedAtIsNull();
 }

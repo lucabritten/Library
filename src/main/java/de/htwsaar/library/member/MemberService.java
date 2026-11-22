@@ -40,6 +40,8 @@ public class MemberService {
             throw new MemberExceptions.MemberAlreadyExistsException(normEmail);
 
         Member saved = memberRepo.saveAndFlush(new Member(req.name(), normEmail, hashedPassword));
+        logger.atInfo().setMessage("[MEMBER] Member created").addKeyValue("memberID", saved.getId()).log();
+
         return MemberResponse.from(saved);
     }
 
@@ -50,7 +52,6 @@ public class MemberService {
     public Member require(Long id) {
         return memberRepo.findById(id)
                 .orElseThrow(() -> {
-                    logger.info("Member with id={} not found", id);
                     return new MemberExceptions.MemberNotFoundException(id);
                 });
     }

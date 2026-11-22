@@ -22,11 +22,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/library
       SPRING_DATASOURCE_USERNAME: library
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-library}
+      SPRING_PROFILES_ACTIVE: seed
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
       LIBRARY_JWT_PUBLIC_KEY: file:/run/keys/public.pem
       LIBRARY_JWT_PRIVATE_KEY: file:/run/keys/private.pem
       LIBRARY_JWT_TTL: 15m
     volumes:
-      - ./keys:run/keys:ro
+      - ./keys:/run/keys:ro
     read_only:
       true
     tmpfs:
@@ -36,7 +38,7 @@ services:
         condition: service_healthy
     stop_grace_period: 30s
     healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:8080/actuator/health/liveness"]
+      test: ["CMD", "curl", "-fs", "http://localhost:8081/actuator/health/liveness"]
       interval: 10s
       timeout: 3s
       retries: 5

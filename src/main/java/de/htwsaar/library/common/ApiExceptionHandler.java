@@ -1,7 +1,10 @@
 package de.htwsaar.library.common;
 
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.*;
@@ -19,13 +22,22 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
+    private final Tracer tracer;
+
+    public ApiExceptionHandler(ObjectProvider<Tracer> tracer) { // Optional bean --> tests wont fail
+        this.tracer = tracer.getIfAvailable();
+    }
+
     private static final Logger logger =
             LoggerFactory.getLogger(ApiExceptionHandler.class);
 
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ProblemDetail optimisticLock(OptimisticLockingFailureException ex) {
-        logger.info("Optimistic lock conflict: {}", ex.getMessage()); // Details nur im LOG
+        logger.atInfo()
+                .setMessage("Optimistic lock conflict")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
                 "The resource was modified concurrently. Please reload and try again.");
@@ -37,7 +49,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exceptions.ConflictException.class)
     ProblemDetail authorInUse(Exceptions.ConflictException ex) {
-        logger.info("CONFLICT-EXCEPTION: {}", ex.getMessage());
+        logger.atInfo()
+                .setMessage("Conflict-exception")
+                .addKeyValue("message", ex.getType())
+                .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
@@ -51,7 +66,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exceptions.NotFoundException.class)
     ProblemDetail notFound(Exceptions.NotFoundException ex) {
-        logger.info("NOT-FOUND-EXCEPTION: {}", ex.getMessage());
+        logger.atInfo()
+                .setMessage("not-found-exception")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
@@ -66,7 +84,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(PropertyReferenceException.class)
     ProblemDetail handleBadSort(PropertyReferenceException ex) {
-        logger.info("PROPERY-REFERENCY-EXCEPTION: Invalid sort property: {}", ex.getPropertyName());
+        logger.atInfo()
+                .setMessage("property-reference-exception")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Invalid sort property: " + ex.getPropertyName());
@@ -74,7 +95,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exceptions.UnauthorizedException.class)
     ProblemDetail handleUnauthorized(Exceptions.UnauthorizedException ex) {
-        logger.info("UNAUTHORIZED-EXCEPTION: {}", ex.getMessage());
+        logger.atInfo()
+                .setMessage("unauthorized-exception")
+                .addKeyValue("message", ex.getMessage())
+                .log();
 
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Unauthorized for action.");
         pd.setType(URI.create("https://library.example/problems/unauthorized"));
@@ -98,9 +122,22 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ProblemDetail unexpectedError(Exception ex) {
-        logger.error("Unexpected error: ", ex);
+        logger.atError()
+                .setMessage("Unexpected error")
+                .setCause(ex)
+                .log();
 
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred");
+        setTraceId(pd);
+        return pd;
+    }
+
+    private void setTraceId(ProblemDetail pd) {
+        if (tracer != null && tracer.currentSpan() != null) {
+            pd.setProperty("traceId", tracer.currentSpan().context().traceId());
+        } else {
+            pd.setProperty("traceId", "not available");
+        }
     }
 }
