@@ -22,7 +22,7 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/prometheus").permitAll() // prometheus, health auf seperaten port
+                        .requestMatchers("/actuator/health/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/prometheus", "/actuator/info").permitAll() // prometheus, health auf seperaten port
                         .requestMatchers(HttpMethod.POST, "/api/v1/members").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/books/**", "/api/v1/authors/**", "/api/v1/copies/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/token").permitAll()

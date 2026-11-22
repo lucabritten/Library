@@ -1,5 +1,5 @@
 # Java-JRE für Buildphase
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:24-jdk AS build
 
 WORKDIR /app
 COPY mvnw pom.xml ./
@@ -9,7 +9,7 @@ RUN chmod +x mvnw && ./mvnw -B -q dependency:go-offline
 COPY src/ src/
 RUN ./mvnw -B -q package -DskipTests
 
-FROM eclipse-temurin:21-jre AS runtime
+FROM eclipse-temurin:24-jre AS runtime
 RUN apt-get update \
  && apt-get upgrade -y \
  && rm -rf /var/lib/apt/lists/*
