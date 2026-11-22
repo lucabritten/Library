@@ -10,6 +10,9 @@ COPY src/ src/
 RUN ./mvnw -B -q package -DskipTests
 
 FROM eclipse-temurin:24-jre AS runtime
+RUN apt-get update \
+ && apt-get upgrade -y \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 RUN groupadd --system spring && useradd --system --gid spring spring
 COPY --from=build --chown=spring:spring /app/target/app.jar app.jar
