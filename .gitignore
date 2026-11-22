@@ -167,6 +167,8 @@ buildNumber.properties
 /.idea/
 
 src/main/resources/application-local.properties
+src/main/resources/application-seed.properties
+
 NOTES.md
 NOTES-backup.md
 /keys/

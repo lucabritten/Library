@@ -22,11 +22,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/library
       SPRING_DATASOURCE_USERNAME: library
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-library}
+      SPRING_PROFILES_ACTIVE: seed
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
       LIBRARY_JWT_PUBLIC_KEY: file:/run/keys/public.pem
       LIBRARY_JWT_PRIVATE_KEY: file:/run/keys/private.pem
       LIBRARY_JWT_TTL: 15m
     volumes:
-      - ./keys:run/keys:ro
+      - ./keys:/run/keys:ro
     read_only:
       true
     tmpfs:

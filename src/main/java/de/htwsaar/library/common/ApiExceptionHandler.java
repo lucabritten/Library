@@ -1,7 +1,10 @@
 package de.htwsaar.library.common;
 
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.*;
@@ -18,6 +21,12 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private final Tracer tracer;
+
+    public ApiExceptionHandler(ObjectProvider<Tracer> tracer) { // Optional bean --> tests wont fail
+        this.tracer = tracer.getIfAvailable();
+    }
 
     private static final Logger logger =
             LoggerFactory.getLogger(ApiExceptionHandler.class);
@@ -115,12 +124,20 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail unexpectedError(Exception ex) {
         logger.atError()
                 .setMessage("Unexpected error")
-                .addKeyValue("exception", ex)
-                .addKeyValue("message", ex.getMessage())
-                .addKeyValue("stacktrace", ex.getStackTrace())
+                .setCause(ex)
                 .log();
 
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred");
+        setTraceId(pd);
+        return pd;
+    }
+
+    private void setTraceId(ProblemDetail pd) {
+        if (tracer != null && tracer.currentSpan() != null) {
+            pd.setProperty("traceId", tracer.currentSpan().context().traceId());
+        } else {
+            pd.setProperty("traceId", "not available");
+        }
     }
 }

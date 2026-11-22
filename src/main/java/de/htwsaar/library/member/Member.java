@@ -73,7 +73,6 @@ public class Member {
         return "Member{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
                 ", role=" + role +
                 ", isLocked=" + isLocked +
                 '}';
